@@ -1,0 +1,11 @@
+{
+  "name": "Comiditas",
+  "short_name": "Comiditas",
+  "description": "Comidas y recetas personales",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf8f2",
+  "theme_color": "#faf8f2",
+  "icons": []
+}
