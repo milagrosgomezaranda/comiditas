@@ -10,10 +10,23 @@
   <title>Comiditas</title>
 </head>
 <body>
-  <main class="app">
+  <section id="authGate" class="auth-gate">
+    <div class="auth-card">
+      <h1>Comiditas</h1>
+      <p id="authMessage">Iniciá sesión para entrar a tu colección privada.</p>
+      <form id="authForm">
+        <label class="field">Correo electrónico<input id="authEmail" type="email" autocomplete="username" required placeholder="tu correo"></label>
+        <label class="field">Contraseña<input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="Mínimo 6 caracteres"></label>
+        <button class="add-button" id="signInButton" type="submit">Iniciar sesión</button>
+        <button class="secondary-button" id="signUpButton" type="button">Crear cuenta</button>
+      </form>
+      <p class="auth-note">Tus comidas y fotos se guardan en una nube privada vinculada a tu cuenta.</p>
+    </div>
+  </section>
+  <main class="app" id="mainApp" hidden>
     <header class="topbar">
       <h1>Comiditas</h1>
-      <button class="icon-button primary" id="quickAdd" aria-label="Agregar">＋</button>
+      <div class="header-actions"><button class="icon-button" id="signOutButton" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button><button class="icon-button primary" id="quickAdd" aria-label="Agregar">＋</button></div>
     </header>
 
     <div class="spaces" role="group" aria-label="Colección">
@@ -96,6 +109,8 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
