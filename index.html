@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#faf8f2">
-  <meta name="description" content="Tu colección visual de comidas y recetas.">
+  <meta name="description" content="Tu colección privada de comidas y recetas.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <title>Comiditas</title>
@@ -12,32 +12,39 @@
 <body>
   <section id="authGate" class="auth-gate">
     <div class="auth-card">
+      <div class="auth-mark" aria-hidden="true">♡</div>
       <h1>Comiditas</h1>
-      <p id="authMessage">Iniciá sesión para entrar a tu colección privada.</p>
+      <p id="authMessage">Tu colección privada de comidas y recetas.</p>
       <form id="authForm">
-        <label class="field">Correo electrónico<input id="authEmail" type="email" autocomplete="username" required placeholder="tu correo"></label>
-        <label class="field">Contraseña<input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="Mínimo 6 caracteres"></label>
-        <button class="add-button" id="signInButton" type="submit">Iniciar sesión</button>
-        <button class="secondary-button" id="signUpButton" type="button">Crear cuenta</button>
+        <label class="field">Contraseña
+          <input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="Tu contraseña">
+        </label>
+        <button class="add-button auth-enter" id="signInButton" type="submit">Entrar</button>
       </form>
-      <p class="auth-note">Tus comidas y fotos se guardan en una nube privada vinculada a tu cuenta.</p>
+      <button class="link-button" id="forgotPasswordButton" type="button">¿Olvidaste tu contraseña?</button>
+      <p class="auth-note">La sesión queda guardada en este dispositivo hasta que cierres sesión.</p>
     </div>
   </section>
+
   <main class="app" id="mainApp" hidden>
     <header class="topbar">
-      <h1>Comiditas</h1>
-      <div class="header-actions"><button class="icon-button" id="signOutButton" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button><button class="icon-button primary" id="quickAdd" aria-label="Agregar">＋</button></div>
+      <div><p class="eyebrow">Nuestra colección</p><h1>Comiditas</h1></div>
+      <div class="header-actions">
+        <button class="icon-button" id="signOutButton" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button>
+        <button class="icon-button primary" id="quickAdd" aria-label="Agregar comida">＋</button>
+      </div>
     </header>
 
     <div class="spaces" role="group" aria-label="Colección">
       <button class="space active" data-space="mine">Mis comidas</button>
       <button class="space pink" data-space="milla">Millá ♡</button>
+      <button class="space gold" data-space="favorites">Favoritas</button>
     </div>
 
     <label class="search">
       <span aria-hidden="true">⌕</span>
       <input id="searchInput" type="search" placeholder="Buscar comida o ingrediente…" autocomplete="off">
-      <button id="clearSearch" class="clear-search" aria-label="Borrar búsqueda" hidden>×</button>
+      <button id="clearSearch" class="clear-search" type="button" aria-label="Borrar búsqueda" hidden>×</button>
     </label>
 
     <nav class="tabs" aria-label="Secciones">
@@ -61,7 +68,7 @@
       <p id="emptyRecipes" class="empty" hidden>No hay recetas todavía.</p>
     </section>
 
-    <footer class="bottom-actions">
+    <footer class="bottom-actions" aria-label="Acciones rápidas">
       <button id="addMealFooter" class="add-button">＋ Agregar comida</button>
       <button id="addRecipeFooter" class="secondary-button">＋ Receta</button>
     </footer>
@@ -69,16 +76,16 @@
 
   <dialog id="mealDialog" class="modal">
     <form id="mealForm" method="dialog">
-      <div class="modal-head"><h2 id="mealDialogTitle">Agregar comida</h2><button type="button" class="icon-button" data-close="mealDialog" aria-label="Cerrar">×</button></div>
+      <div class="modal-head"><h2 id="mealDialogTitle">Agregar comida</h2><button type="button" class="icon-button close-large" data-close="mealDialog" aria-label="Cerrar">×</button></div>
       <input type="hidden" id="mealId">
       <div class="photo-actions">
         <label class="photo-button">▧ Elegir fotos<input id="galleryInput" type="file" accept="image/*" multiple></label>
         <label class="photo-button">◎ Sacar foto<input id="cameraInput" type="file" accept="image/*" capture="environment"></label>
       </div>
-      <p class="hint">Podés elegir varias fotos; se crea una comida por foto. Si no elegís foto, también podés guardar solo el título.</p>
+      <p class="hint">La foto y el título alcanzan. Ingredientes y categoría son opcionales para ordenar y buscar.</p>
       <div id="photoPreview" class="photo-preview"></div>
       <label class="field">Nombre<input id="mealName" required maxlength="120" placeholder="Ej. Tarta de pollo"></label>
-      <label class="field">Ingredientes para buscar (opcional)<textarea id="mealIngredients" rows="2" placeholder="Pollo, cebolla, huevo…"></textarea></label>
+      <label class="field">Ingredientes para buscar <span class="optional">opcional</span><textarea id="mealIngredients" rows="2" placeholder="Pollo, cebolla, huevo…"></textarea></label>
       <label class="field">Categoría
         <select id="mealCategory">
           <option>Desayuno / Merienda</option>
@@ -87,26 +94,63 @@
         </select>
       </label>
       <label class="check-row"><input id="mealForMilla" type="checkbox"><span>También para Millá ♡</span></label>
+      <label class="check-row favorite-check"><input id="mealFavorite" type="checkbox"><span>Guardar en Favoritas</span></label>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="mealDialog">Cancelar</button><button class="add-button" type="submit">Guardar</button></div>
     </form>
   </dialog>
 
   <dialog id="recipeDialog" class="modal">
     <form id="recipeForm" method="dialog">
-      <div class="modal-head"><h2 id="recipeDialogTitle">Agregar receta</h2><button type="button" class="icon-button" data-close="recipeDialog" aria-label="Cerrar">×</button></div>
+      <div class="modal-head"><h2 id="recipeDialogTitle">Agregar receta</h2><button type="button" class="icon-button close-large" data-close="recipeDialog" aria-label="Cerrar">×</button></div>
       <input type="hidden" id="recipeId">
-      <label class="field">Nombre<input id="recipeName" required maxlength="120" placeholder="Ej. Masa de tarta"></label>
-      <label class="field">Ingredientes<textarea id="recipeIngredients" rows="4" placeholder="Escribí los ingredientes…"></textarea></label>
-      <label class="field">Preparación<textarea id="recipeSteps" rows="5" placeholder="Paso a paso…"></textarea></label>
+      <div class="photo-actions">
+        <label class="photo-button">▧ Elegir foto<input id="recipeGalleryInput" type="file" accept="image/*"></label>
+        <label class="photo-button">◎ Sacar foto<input id="recipeCameraInput" type="file" accept="image/*" capture="environment"></label>
+      </div>
+      <div id="recipePhotoPreview" class="photo-preview"></div>
+      <label class="field">Nombre<input id="recipeName" required maxlength="120" placeholder="Ej. Pastel de papas"></label>
+      <label class="field">Ingredientes <span class="optional">opcional</span><textarea id="recipeIngredients" rows="4" placeholder="Escribí los ingredientes…"></textarea></label>
+      <label class="field">Preparación <span class="optional">opcional</span><textarea id="recipeSteps" rows="5" placeholder="Paso a paso…"></textarea></label>
+      <div class="field-grid">
+        <label class="field">Tiempo <span class="optional">minutos</span><input id="recipeTime" type="number" min="0" max="1440" inputmode="numeric" placeholder="45"></label>
+        <label class="field">Porciones<input id="recipeServings" type="number" min="1" max="100" inputmode="numeric" placeholder="4"></label>
+      </div>
+      <label class="field">Categoría
+        <select id="recipeCategory">
+          <option value="">Sin categoría</option>
+          <option>Desayuno / Merienda</option>
+          <option>Almuerzo / Cena</option>
+          <option>Snacks / Postres</option>
+        </select>
+      </label>
+      <label class="check-row favorite-check"><input id="recipeFavorite" type="checkbox"><span>Guardar en Favoritas</span></label>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="recipeDialog">Cancelar</button><button class="add-button" type="submit">Guardar</button></div>
     </form>
   </dialog>
 
   <dialog id="detailDialog" class="modal detail-modal">
-    <div class="modal-head"><h2 id="detailTitle"></h2><button type="button" class="icon-button" data-close="detailDialog" aria-label="Cerrar">×</button></div>
+    <div class="modal-head"><h2 id="detailTitle"></h2><button type="button" class="icon-button close-large" data-close="detailDialog" aria-label="Cerrar">×</button></div>
     <div id="detailContent"></div>
     <div class="modal-actions"><button id="editDetail" class="secondary-button">Editar</button><button id="deleteDetail" class="danger-button">Eliminar</button></div>
   </dialog>
+
+  <dialog id="recoveryDialog" class="modal recovery-modal">
+    <form id="recoveryForm" method="dialog">
+      <div class="modal-head"><h2>Nueva contraseña</h2><button type="button" class="icon-button close-large" data-close="recoveryDialog" aria-label="Cerrar">×</button></div>
+      <p class="hint">Elegí una contraseña nueva para Comiditas.</p>
+      <label class="field">Nueva contraseña<input id="newPassword" type="password" minlength="6" autocomplete="new-password" required></label>
+      <label class="field">Repetir contraseña<input id="confirmPassword" type="password" minlength="6" autocomplete="new-password" required></label>
+      <button class="add-button full-button" type="submit">Guardar contraseña</button>
+    </form>
+  </dialog>
+
+  <div id="photoLightbox" class="lightbox" hidden aria-modal="true" role="dialog" aria-label="Foto ampliada">
+    <button id="lightboxClose" class="lightbox-close" type="button" aria-label="Cerrar foto">×</button>
+    <button id="lightboxPrev" class="lightbox-nav lightbox-prev" type="button" aria-label="Foto anterior">‹</button>
+    <img id="lightboxImage" alt="Foto ampliada">
+    <button id="lightboxNext" class="lightbox-nav lightbox-next" type="button" aria-label="Foto siguiente">›</button>
+    <p id="lightboxCaption" class="lightbox-caption"></p>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

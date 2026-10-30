@@ -1,34 +1,69 @@
-# Comiditas privada: cuenta personal + sincronización
+# Comiditas privada
 
-Interfaz estática publicada en GitHub Pages; autenticación, base de datos y fotos privadas en Supabase. No usa IA, tokens de IA ni claves secretas de servidor. Los planes gratuitos tienen límites y condiciones que pueden cambiar.
+Aplicación estática publicada en GitHub Pages. Supabase maneja autenticación, base de datos, fotos privadas y el pequeño helper de acceso. No hay claves `service_role` en el frontend.
 
-## A. Crear el backend privado
-1. Entrá a https://supabase.com/ y creá un proyecto.
-2. En **SQL Editor → New query**, copiá y ejecutá todo `supabase-setup.sql`.
-3. En **Authentication → URL Configuration**, poné como Site URL la dirección de GitHub Pages, por ejemplo `https://TU-USUARIO.github.io/comiditas/`, y agregala también en Redirect URLs.
-4. En **Project Settings → API** (o Connect), copiá la Project URL y la clave publicable/anon. Nunca uses una `service_role` ni una clave secreta en la web.
+## Estado de esta versión
 
-## B. Conectar y crear TU cuenta
-1. Abrí `config.js` y reemplazá los dos valores `PEGAR_...` con la URL y la clave publicable/anon de Supabase. Dejá `ALLOW_SIGNUP: true` solo para el alta inicial.
-2. Subí los archivos de esta carpeta a la raíz de tu repositorio `comiditas`, reemplazando los existentes. Incluí `config.js` y `supabase-setup.sql`.
-3. Esperá que GitHub Pages termine de publicar y abrí la web.
-4. Elegí **Crear cuenta**, registrate con tu correo y contraseña y confirmá el correo si Supabase lo solicita. Después iniciá sesión.
+Se conserva el proyecto existente y se agregan:
 
-## C. Cerrar el registro para que sea solo tu cuenta
-Esto es obligatorio; ocultar el botón de registro por sí solo NO es seguridad del servidor.
-1. En Supabase, entrá a **Authentication → Settings** (en algunas interfaces, Authentication → Providers → Email).
-2. Desactivá **Allow new users to sign up / Enable signups** y guardá. Así se bloquean nuevas altas en el backend.
-3. En el archivo `config.js`, cambiá `ALLOW_SIGNUP: true` a `ALLOW_SIGNUP: false` y volvé a subir ese archivo a GitHub.
-4. Probá cerrar sesión y volver a entrar con tu cuenta. No compartas la contraseña.
+- login de un solo campo de contraseña;
+- sesión persistente;
+- recuperación de contraseña por correo;
+- comidas simples sin ingredientes obligatorios;
+- recetas con foto, ingredientes, preparación, tiempo, porciones y categoría opcionales;
+- Favoritas;
+- sección Millá ♡;
+- fotos ampliables con navegación;
+- carga desde galería o cámara;
+- edición y eliminación;
+- service worker actualizado.
+
+## Seguridad del login simplificado
+
+El correo de la cuenta NO se guarda en `config.js` ni en el repositorio público. Se guarda como secreto de una Supabase Edge Function llamada `auth-helper`.
+
+La función recibe solamente la contraseña y autentica contra Supabase Auth. El navegador recibe la sesión normal de Supabase y la persiste localmente.
+
+`ALLOW_SIGNUP` permanece en `false` y el registro público debe seguir desactivado en Supabase Authentication.
+
+## Cambio de base de datos
+
+NO vuelvas a ejecutar `supabase-setup.sql`.
+
+Esta versión incluye `supabase-migration-v2.sql`, una migración aditiva que solamente agrega columnas para favoritas y datos de recetas. No desactiva RLS, no elimina políticas y no recrea tablas.
+
+## Función auth-helper
+
+Archivo:
+
+`supabase/functions/auth-helper/index.ts`
+
+Necesita un único secreto:
+
+`COMIDITAS_LOGIN_EMAIL=<correo de la cuenta ya creada>`
+
+El correo queda en Supabase, no en GitHub.
+
+La recuperación de contraseña redirige a:
+
+`https://milagrosgomezaranda.github.io/comiditas/`
 
 ## Privacidad
-- Las tablas tienen Row Level Security (RLS): cada cuenta solo puede leer y modificar sus propias filas.
-- El bucket `meal-photos` es privado; las fotos se muestran con URLs firmadas temporales, no URLs públicas.
-- La URL y la clave publicable/anon son aptas para el cliente. La seguridad real depende de las políticas SQL y del bucket privado. Nunca publiques contraseñas ni claves `service_role`.
-- El repositorio de GitHub puede ser público, por lo que el código será visible. Eso NO publica las fotos ni los registros protegidos por Supabase.
-- La privacidad técnica no concede derechos para reutilizar imágenes ajenas.
 
-## Límites y datos existentes
-- La app sincroniza entre dispositivos al iniciar sesión con la misma cuenta.
-- Fotos y registros guardados en la versión anterior local no se migran automáticamente. Conservá la versión anterior hasta confirmar que la nube funciona y volvé a cargar o migrar manualmente las imágenes necesarias.
-- El almacenamiento y la base de datos gratuitos tienen cuotas; las imágenes grandes consumen espacio.
+- `meals` y `recipes` siguen protegidas por RLS.
+- `meal-photos` sigue siendo privado.
+- Las imágenes se leen mediante URLs firmadas temporales.
+- La clave publicable de Supabase puede estar en el frontend.
+- Nunca publiques una `service_role` ni una contraseña.
+
+## Validación realizada sobre el ZIP
+
+Se verificó localmente:
+
+- sintaxis JavaScript de `app.js`;
+- sintaxis JavaScript de `sw.js`;
+- todas las referencias a IDs del DOM usadas por `app.js` existen en `index.html`;
+- no se agregó ninguna `service_role` ni correo/contraseña al frontend;
+- el proyecto conserva la URL y la clave publicable existentes.
+
+No se pudo ejecutar una prueba real contra el proyecto Supabase desde este entorno porque la red del contenedor no resuelve el host externo. Por eso no se afirma que login, CRUD o Storage estén validados en vivo todavía.

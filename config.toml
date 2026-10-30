@@ -1,0 +1,2 @@
+[functions.auth-helper]
+verify_jwt = false
