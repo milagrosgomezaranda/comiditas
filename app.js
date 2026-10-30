@@ -14,8 +14,6 @@
   let selectedRecipePhoto = null;
   let detailType = null;
   let detailId = null;
-  let lightboxItems = [];
-  let lightboxIndex = 0;
   let toastTimer = null;
 
   const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -199,9 +197,6 @@
     $("recipeList").innerHTML = filteredRecipes.map(recipeCard).join("");
     $("emptyRecipes").hidden = filteredRecipes.length > 0;
 
-    lightboxItems = (activeView === "meals" ? filteredMeals : filteredRecipes)
-      .filter(item => item.photo)
-      .map(item => ({ src: item.photo, title: item.name }));
   }
 
   function resetMealForm() {
@@ -333,24 +328,11 @@
   }
 
   function openLightbox(src, title = "") {
-    const existing = lightboxItems.findIndex(item => item.src === src);
-    if (existing === -1) lightboxItems = [{ src, title }, ...lightboxItems];
-    lightboxIndex = Math.max(0, lightboxItems.findIndex(item => item.src === src));
-    updateLightbox();
+    $("lightboxImage").src = src;
+    $("lightboxImage").alt = title || "Foto ampliada";
     $("photoLightbox").hidden = false;
     document.body.classList.add("lightbox-open");
     $("lightboxClose").focus();
-  }
-
-  function updateLightbox() {
-    const current = lightboxItems[lightboxIndex];
-    if (!current) return;
-    $("lightboxImage").src = current.src;
-    $("lightboxImage").alt = current.title || "Foto ampliada";
-    $("lightboxCaption").textContent = current.title || "";
-    const multiple = lightboxItems.length > 1;
-    $("lightboxPrev").hidden = !multiple;
-    $("lightboxNext").hidden = !multiple;
   }
 
   function closeLightbox() {
@@ -574,14 +556,10 @@
   });
 
   $("lightboxClose").onclick = closeLightbox;
-  $("lightboxPrev").onclick = () => { lightboxIndex = (lightboxIndex - 1 + lightboxItems.length) % lightboxItems.length; updateLightbox(); };
-  $("lightboxNext").onclick = () => { lightboxIndex = (lightboxIndex + 1) % lightboxItems.length; updateLightbox(); };
   $("photoLightbox").addEventListener("click", event => { if (event.target === $("photoLightbox")) closeLightbox(); });
   document.addEventListener("keydown", event => {
     if ($("photoLightbox").hidden) return;
     if (event.key === "Escape") closeLightbox();
-    if (event.key === "ArrowLeft" && lightboxItems.length > 1) $("lightboxPrev").click();
-    if (event.key === "ArrowRight" && lightboxItems.length > 1) $("lightboxNext").click();
   });
 
   async function init() {
