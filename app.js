@@ -28,19 +28,25 @@
     toastTimer = setTimeout(() => toast.classList.remove("show"), 3000);
   }
 
-  function showError(error) {
-    console.error("Comiditas error:", error);
+  function setFormStatus(id, message = "", success = false) {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = message;
+    el.hidden = !message;
+    el.classList.toggle("success", Boolean(success));
+  }
+
+  function readableError(error) {
     const message = error?.message || "Ocurrió un error. Revisá la conexión e intentá de nuevo.";
     const code = error?.code ? ` [${error.code}]` : "";
-    if (/column .* does not exist|schema cache|favorite|time_minutes|servings|photo_path/i.test(message)) {
-      notify(`Falta aplicar la migración v2 de Supabase.${code}`);
-      return;
-    }
-    if (/row-level security|permission denied|42501/i.test(`${message} ${error?.code || ""}`)) {
-      notify(`Supabase bloqueó el guardado por permisos/RLS.${code}`);
-      return;
-    }
-    notify(`${message}${code}`);
+    if (/column .* does not exist|schema cache|favorite|time_minutes|servings|photo_path/i.test(message)) return `Falta aplicar la migración v2 de Supabase.${code}`;
+    if (/row-level security|permission denied|42501/i.test(`${message} ${error?.code || ""}`)) return `Supabase bloqueó el guardado por permisos/RLS.${code}`;
+    return `${message}${code}`;
+  }
+
+  function showError(error) {
+    console.error("Comiditas error:", error);
+    notify(readableError(error));
   }
 
   function closeDialogs() {
@@ -236,6 +242,7 @@
     $("mealDialogTitle").textContent = "Agregar comida";
     selectedPhotos = [];
     $("photoPreview").innerHTML = "";
+    setFormStatus("mealFormStatus");
   }
 
   function resetRecipeForm() {
@@ -244,6 +251,7 @@
     $("recipeDialogTitle").textContent = "Agregar receta";
     selectedRecipePhoto = null;
     $("recipePhotoPreview").innerHTML = "";
+    setFormStatus("recipeFormStatus");
   }
 
   async function filesToPhotos(files) {
@@ -476,7 +484,17 @@
     event.preventDefault();
     const id = $("mealId").value;
     const name = $("mealName").value.trim();
-    if (!name) return;
+    if (!name) {
+      setFormStatus("mealFormStatus", "Escribí un nombre para la comida.");
+      $("mealName").focus();
+      return;
+    }
+
+    const button = $("mealSaveButton");
+    button.disabled = true;
+    button.textContent = "Guardando…";
+    setFormStatus("mealFormStatus", "Guardando…", true);
+
     try {
       const old = id ? (await all("meals")).find(meal => meal.id === id) : null;
       const base = {
@@ -499,12 +517,18 @@
       } else {
         await saveMeal(base);
       }
+      setFormStatus("mealFormStatus", "Comida guardada.", true);
       closeDialogs();
       activeView = "meals";
       notify("Comida guardada");
       await render();
     } catch (error) {
+      const message = readableError(error);
+      setFormStatus("mealFormStatus", message);
       showError(error);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Guardar";
     }
   });
 
@@ -512,7 +536,17 @@
     event.preventDefault();
     const id = $("recipeId").value;
     const name = $("recipeName").value.trim();
-    if (!name) return;
+    if (!name) {
+      setFormStatus("recipeFormStatus", "Escribí un nombre para la receta.");
+      $("recipeName").focus();
+      return;
+    }
+
+    const button = $("recipeSaveButton");
+    button.disabled = true;
+    button.textContent = "Guardando…";
+    setFormStatus("recipeFormStatus", "Guardando…", true);
+
     try {
       const old = id ? (await all("recipes")).find(recipe => recipe.id === id) : null;
       await saveRecipe({
@@ -528,12 +562,18 @@
         photoData: selectedRecipePhoto?.data || null,
         isEditing: Boolean(id),
       });
+      setFormStatus("recipeFormStatus", "Receta guardada.", true);
       closeDialogs();
       activeView = "recipes";
       notify("Receta guardada");
       await render();
     } catch (error) {
+      const message = readableError(error);
+      setFormStatus("recipeFormStatus", message);
       showError(error);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Guardar";
     }
   });
 

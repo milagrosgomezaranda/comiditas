@@ -75,7 +75,7 @@
   </main>
 
   <dialog id="mealDialog" class="modal">
-    <form id="mealForm" method="dialog">
+    <form id="mealForm">
       <div class="modal-head"><h2 id="mealDialogTitle">Agregar comida</h2><button type="button" class="icon-button close-large" data-close="mealDialog" aria-label="Cerrar">×</button></div>
       <input type="hidden" id="mealId">
       <div class="photo-actions">
@@ -95,12 +95,13 @@
       </label>
       <label class="check-row"><input id="mealForMilla" type="checkbox"><span>También para Millá ♡</span></label>
       <label class="check-row favorite-check"><input id="mealFavorite" type="checkbox"><span>Guardar en Favoritas</span></label>
-      <div class="modal-actions"><button type="button" class="secondary-button" data-close="mealDialog">Cancelar</button><button class="add-button" type="submit">Guardar</button></div>
+      <p id="mealFormStatus" class="form-status" hidden></p>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close="mealDialog">Cancelar</button><button class="add-button" id="mealSaveButton" type="submit">Guardar</button></div>
     </form>
   </dialog>
 
   <dialog id="recipeDialog" class="modal">
-    <form id="recipeForm" method="dialog">
+    <form id="recipeForm">
       <div class="modal-head"><h2 id="recipeDialogTitle">Agregar receta</h2><button type="button" class="icon-button close-large" data-close="recipeDialog" aria-label="Cerrar">×</button></div>
       <input type="hidden" id="recipeId">
       <div class="photo-actions">
@@ -124,7 +125,8 @@
         </select>
       </label>
       <label class="check-row favorite-check"><input id="recipeFavorite" type="checkbox"><span>Guardar en Favoritas</span></label>
-      <div class="modal-actions"><button type="button" class="secondary-button" data-close="recipeDialog">Cancelar</button><button class="add-button" type="submit">Guardar</button></div>
+      <p id="recipeFormStatus" class="form-status" hidden></p>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close="recipeDialog">Cancelar</button><button class="add-button" id="recipeSaveButton" type="submit">Guardar</button></div>
     </form>
   </dialog>
 
@@ -135,7 +137,7 @@
   </dialog>
 
   <dialog id="recoveryDialog" class="modal recovery-modal">
-    <form id="recoveryForm" method="dialog">
+    <form id="recoveryForm">
       <div class="modal-head"><h2>Nueva contraseña</h2><button type="button" class="icon-button close-large" data-close="recoveryDialog" aria-label="Cerrar">×</button></div>
       <p class="hint">Elegí una contraseña nueva para Comiditas.</p>
       <label class="field">Nueva contraseña<input id="newPassword" type="password" minlength="6" autocomplete="new-password" required></label>
