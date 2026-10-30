@@ -15,6 +15,8 @@
   let detailType = null;
   let detailId = null;
   let toastTimer = null;
+  let mealSaveInFlight = false;
+  let recipeSaveInFlight = false;
 
   const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const escapeHTML = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -191,6 +193,10 @@
         <button class="heart ${meal.forMilla ? "marked" : ""}" type="button" data-heart="${meal.id}" aria-label="${meal.forMilla ? "Quitar de Millá" : "Marcar para Millá"}">${meal.forMilla ? "♥" : "♡"}</button>
       </div>
       <div class="meal-category">${escapeHTML(meal.category)}</div>
+      <div class="card-actions">
+        <button class="card-action" type="button" data-edit-meal="${meal.id}">Editar</button>
+        <button class="card-action danger-inline" type="button" data-delete-meal="${meal.id}">Eliminar</button>
+      </div>
     </article>`;
   }
 
@@ -202,6 +208,10 @@
         <span class="recipe-text"><strong>${escapeHTML(recipe.name)}</strong>${meta ? `<small>${escapeHTML(meta)}</small>` : ""}</span>
       </button>
       <button class="recipe-favorite ${recipe.favorite ? "marked-gold" : ""}" type="button" data-favorite-recipe="${recipe.id}" aria-label="${recipe.favorite ? "Quitar de favoritas" : "Guardar en favoritas"}">★</button>
+      <div class="card-actions recipe-actions">
+        <button class="card-action" type="button" data-edit-recipe="${recipe.id}">Editar</button>
+        <button class="card-action danger-inline" type="button" data-delete-recipe="${recipe.id}">Eliminar</button>
+      </div>
     </article>`;
   }
 
@@ -275,11 +285,9 @@
 
   async function handleMealFiles(input) {
     try {
-      const fresh = await filesToPhotos([...input.files]);
-      selectedPhotos.push(...fresh);
+      const fresh = await filesToPhotos([...input.files].slice(0, 1));
+      selectedPhotos = fresh;
       previewMealPhotos();
-      if (fresh.length === 1 && !$("mealName").value) $("mealName").value = fresh[0].name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
-      if (fresh.length > 1) notify(`${fresh.length} fotos seleccionadas`);
     } catch (error) {
       showError(error);
     }
@@ -450,6 +458,15 @@
 
   $("mealGrid").addEventListener("click", async event => {
     try {
+      const edit = event.target.closest("[data-edit-meal]");
+      if (edit) return await openMealEditor(edit.dataset.editMeal);
+      const remove = event.target.closest("[data-delete-meal]");
+      if (remove) {
+        if (!confirm("¿Eliminar esta comida?")) return;
+        await deleteItem("meals", remove.dataset.deleteMeal);
+        notify("Comida eliminada");
+        return await render();
+      }
       const favorite = event.target.closest("[data-favorite-meal]");
       if (favorite) return await toggleFavorite("meals", favorite.dataset.favoriteMeal);
       const heart = event.target.closest("[data-heart]");
@@ -471,6 +488,15 @@
 
   $("recipeList").addEventListener("click", async event => {
     try {
+      const edit = event.target.closest("[data-edit-recipe]");
+      if (edit) return await openRecipeEditor(edit.dataset.editRecipe);
+      const remove = event.target.closest("[data-delete-recipe]");
+      if (remove) {
+        if (!confirm("¿Eliminar esta receta?")) return;
+        await deleteItem("recipes", remove.dataset.deleteRecipe);
+        notify("Receta eliminada");
+        return await render();
+      }
       const favorite = event.target.closest("[data-favorite-recipe]");
       if (favorite) return await toggleFavorite("recipes", favorite.dataset.favoriteRecipe);
       const detail = event.target.closest("[data-detail-recipe]");
@@ -482,6 +508,7 @@
 
   $("mealForm").addEventListener("submit", async event => {
     event.preventDefault();
+    if (mealSaveInFlight) return;
     const id = $("mealId").value;
     const name = $("mealName").value.trim();
     if (!name) {
@@ -491,6 +518,7 @@
     }
 
     const button = $("mealSaveButton");
+    mealSaveInFlight = true;
     button.disabled = true;
     button.textContent = "Guardando…";
     setFormStatus("mealFormStatus", "Guardando…", true);
@@ -507,16 +535,8 @@
         photo_path: old?.photo_path || null,
         isEditing: Boolean(id),
       };
-      if (id) {
-        base.photoData = selectedPhotos.length ? selectedPhotos[0].data : null;
-        await saveMeal(base);
-      } else if (selectedPhotos.length) {
-        for (let i = 0; i < selectedPhotos.length; i += 1) {
-          await saveMeal({ ...base, id: uid(), name: selectedPhotos.length > 1 && i > 0 ? `${name} ${i + 1}` : name, photoData: selectedPhotos[i].data });
-        }
-      } else {
-        await saveMeal(base);
-      }
+      base.photoData = selectedPhotos.length ? selectedPhotos[0].data : null;
+      await saveMeal(base);
       setFormStatus("mealFormStatus", "Comida guardada.", true);
       closeDialogs();
       activeView = "meals";
@@ -527,6 +547,7 @@
       setFormStatus("mealFormStatus", message);
       showError(error);
     } finally {
+      mealSaveInFlight = false;
       button.disabled = false;
       button.textContent = "Guardar";
     }
@@ -534,6 +555,7 @@
 
   $("recipeForm").addEventListener("submit", async event => {
     event.preventDefault();
+    if (recipeSaveInFlight) return;
     const id = $("recipeId").value;
     const name = $("recipeName").value.trim();
     if (!name) {
@@ -543,6 +565,7 @@
     }
 
     const button = $("recipeSaveButton");
+    recipeSaveInFlight = true;
     button.disabled = true;
     button.textContent = "Guardando…";
     setFormStatus("recipeFormStatus", "Guardando…", true);
@@ -572,6 +595,7 @@
       setFormStatus("recipeFormStatus", message);
       showError(error);
     } finally {
+      recipeSaveInFlight = false;
       button.disabled = false;
       button.textContent = "Guardar";
     }

@@ -15,3 +15,5 @@
 @media(min-width:600px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.app{padding-top:28px}.bottom-actions{padding-left:24px;padding-right:24px}}@media(max-width:390px){.spaces{gap:5px}.space{font-size:12px}.field-grid{grid-template-columns:1fr}.modal{padding:17px}.grid{gap:9px}}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 
 .form-status{margin:12px 0 0;padding:11px 13px;border-radius:12px;background:#f7e4e4;color:#8a3d3d;font-size:13px;line-height:1.4}.form-status.success{background:#e7efe1;color:#4f6847}.modal-actions button:disabled{opacity:.65;cursor:wait}
+
+.card-actions{display:flex;gap:8px;padding:6px 1px 2px}.card-action{min-height:40px;flex:1;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-weight:700;font-size:12px}.card-action.danger-inline{color:#9c4545;background:#fff8f7}.recipe-actions{grid-column:1/-1;margin-top:6px}.add-button:disabled,.secondary-button:disabled,.card-action:disabled{opacity:.58;cursor:not-allowed}.meal-card .card-actions button,.recipe-card-wrap .card-actions button{touch-action:manipulation}
