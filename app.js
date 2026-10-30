@@ -29,13 +29,18 @@
   }
 
   function showError(error) {
-    console.error(error);
+    console.error("Comiditas error:", error);
     const message = error?.message || "Ocurrió un error. Revisá la conexión e intentá de nuevo.";
+    const code = error?.code ? ` [${error.code}]` : "";
     if (/column .* does not exist|schema cache|favorite|time_minutes|servings|photo_path/i.test(message)) {
-      notify("Falta aplicar la migración v2 de Supabase.");
+      notify(`Falta aplicar la migración v2 de Supabase.${code}`);
       return;
     }
-    notify(message);
+    if (/row-level security|permission denied|42501/i.test(`${message} ${error?.code || ""}`)) {
+      notify(`Supabase bloqueó el guardado por permisos/RLS.${code}`);
+      return;
+    }
+    notify(`${message}${code}`);
   }
 
   function closeDialogs() {
@@ -89,6 +94,8 @@
   }
 
   async function saveMeal(meal) {
+    if (!user?.id) throw new Error("No hay una sesión válida para guardar la comida.");
+    const isEditing = Boolean(meal.isEditing);
     const payload = {
       id: meal.id || uid(),
       user_id: user.id,
@@ -104,11 +111,24 @@
       payload.photo_path = await uploadPhoto(meal.photoData, `meals/${payload.id}`);
       if (previousPath && previousPath !== payload.photo_path) await sb.storage.from("meal-photos").remove([previousPath]);
     }
-    const { error } = await sb.from("meals").upsert(payload);
-    if (error) throw error;
+
+    let result;
+    if (isEditing) {
+      const updatePayload = { ...payload };
+      delete updatePayload.id;
+      delete updatePayload.user_id;
+      result = await sb.from("meals").update(updatePayload).eq("id", payload.id).eq("user_id", user.id).select("id").maybeSingle();
+    } else {
+      result = await sb.from("meals").insert(payload).select("id").single();
+    }
+    if (result.error) throw result.error;
+    if (!result.data?.id) throw new Error("Supabase no confirmó el guardado de la comida.");
+    return result.data.id;
   }
 
   async function saveRecipe(recipe) {
+    if (!user?.id) throw new Error("No hay una sesión válida para guardar la receta.");
+    const isEditing = Boolean(recipe.isEditing);
     const payload = {
       id: recipe.id || uid(),
       user_id: user.id,
@@ -126,8 +146,19 @@
       payload.photo_path = await uploadPhoto(recipe.photoData, `recipes/${payload.id}`);
       if (previousPath && previousPath !== payload.photo_path) await sb.storage.from("meal-photos").remove([previousPath]);
     }
-    const { error } = await sb.from("recipes").upsert(payload);
-    if (error) throw error;
+
+    let result;
+    if (isEditing) {
+      const updatePayload = { ...payload };
+      delete updatePayload.id;
+      delete updatePayload.user_id;
+      result = await sb.from("recipes").update(updatePayload).eq("id", payload.id).eq("user_id", user.id).select("id").maybeSingle();
+    } else {
+      result = await sb.from("recipes").insert(payload).select("id").single();
+    }
+    if (result.error) throw result.error;
+    if (!result.data?.id) throw new Error("Supabase no confirmó el guardado de la receta.");
+    return result.data.id;
   }
 
   async function deleteItem(table, id) {
@@ -456,6 +487,7 @@
         forMilla: $("mealForMilla").checked,
         favorite: $("mealFavorite").checked,
         photo_path: old?.photo_path || null,
+        isEditing: Boolean(id),
       };
       if (id) {
         base.photoData = selectedPhotos.length ? selectedPhotos[0].data : null;
@@ -494,6 +526,7 @@
         favorite: $("recipeFavorite").checked,
         photo_path: old?.photo_path || null,
         photoData: selectedRecipePhoto?.data || null,
+        isEditing: Boolean(id),
       });
       closeDialogs();
       activeView = "recipes";
