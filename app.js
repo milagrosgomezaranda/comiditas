@@ -10,6 +10,8 @@
   let activeSpace = "mine";
   let activeView = "meals";
   let activeCategory = "Todas";
+  const GRID_COLUMNS_KEY = "comiditas:meal-grid-columns";
+  let gridColumns = readGridColumns();
   let selectedPhotos = [];
   let selectedRecipePhoto = null;
   let detailType = null;
@@ -21,6 +23,32 @@
   const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const escapeHTML = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const hasText = value => typeof value === "string" && value.trim().length > 0;
+
+  function readGridColumns() {
+    try {
+      return localStorage.getItem(GRID_COLUMNS_KEY) === "1" ? 1 : 2;
+    } catch {
+      return 2;
+    }
+  }
+
+  function setGridColumns(value) {
+    gridColumns = Number(value) === 1 ? 1 : 2;
+    try { localStorage.setItem(GRID_COLUMNS_KEY, String(gridColumns)); } catch {}
+    applyGridColumns();
+  }
+
+  function applyGridColumns() {
+    const grid = $("mealGrid");
+    if (!grid) return;
+    grid.classList.toggle("grid-one", gridColumns === 1);
+    grid.classList.toggle("grid-two", gridColumns === 2);
+    document.querySelectorAll("[data-grid-columns]").forEach(button => {
+      const active = Number(button.dataset.gridColumns) === gridColumns;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
 
   function notify(message) {
     const toast = $("toast");
@@ -177,25 +205,22 @@
   }
 
   function matchesSpace(record, type) {
-    if (activeSpace === "favorites") return Boolean(record.favorite);
     if (activeSpace === "milla") return type === "meal" && Boolean(record.forMilla);
     return true;
   }
 
   function mealCard(meal) {
     return `<article class="meal-card">
-      ${meal.photo
-        ? `<button class="photo-open" type="button" data-photo-src="${escapeHTML(meal.photo)}" data-photo-title="${escapeHTML(meal.name)}"><img class="meal-photo" src="${escapeHTML(meal.photo)}" alt="${escapeHTML(meal.name)}"></button>`
-        : `<button class="meal-photo photo-placeholder" type="button" data-detail-meal="${meal.id}" aria-label="Ver ${escapeHTML(meal.name)}">♡</button>`}
-      <div class="meal-title-row">
-        <button class="meal-title" type="button" data-detail-meal="${meal.id}">${escapeHTML(meal.name)}</button>
-        <button class="mini-action ${meal.favorite ? "marked-gold" : ""}" type="button" data-favorite-meal="${meal.id}" aria-label="${meal.favorite ? "Quitar de favoritas" : "Guardar en favoritas"}">★</button>
-        <button class="heart ${meal.forMilla ? "marked" : ""}" type="button" data-heart="${meal.id}" aria-label="${meal.forMilla ? "Quitar de Millá" : "Marcar para Millá"}">${meal.forMilla ? "♥" : "♡"}</button>
+      <div class="photo-shell">
+        ${meal.photo
+          ? `<button class="photo-open" type="button" data-photo-src="${escapeHTML(meal.photo)}" data-photo-title="${escapeHTML(meal.name)}"><img class="meal-photo" src="${escapeHTML(meal.photo)}" alt="${escapeHTML(meal.name)}"></button>`
+          : `<button class="meal-photo photo-placeholder" type="button" data-detail-meal="${meal.id}" aria-label="Ver ${escapeHTML(meal.name)}">Sin foto</button>`}
       </div>
-      <div class="meal-category">${escapeHTML(meal.category)}</div>
-      <div class="card-actions">
-        <button class="card-action" type="button" data-edit-meal="${meal.id}">Editar</button>
-        <button class="card-action danger-inline" type="button" data-delete-meal="${meal.id}">Eliminar</button>
+      <button class="meal-title" type="button" data-detail-meal="${meal.id}">${escapeHTML(meal.name)}</button>
+      <div class="meal-actions" role="group" aria-label="Acciones para ${escapeHTML(meal.name)}">
+        <button class="meal-action milla-action ${meal.forMilla ? "active" : ""}" type="button" data-milla-meal="${meal.id}" aria-label="${meal.forMilla ? "Quitar de Millá" : "Marcar también para Millá"}" aria-pressed="${meal.forMilla ? "true" : "false"}">♕</button>
+        <button class="meal-action edit-action" type="button" data-edit-meal="${meal.id}" aria-label="Editar ${escapeHTML(meal.name)}">✎</button>
+        <button class="meal-action delete-action" type="button" data-delete-meal="${meal.id}" aria-label="Eliminar ${escapeHTML(meal.name)}">⌫</button>
       </div>
     </article>`;
   }
@@ -207,11 +232,7 @@
         ${recipe.photo ? `<img class="recipe-thumb" src="${escapeHTML(recipe.photo)}" alt="">` : `<span class="recipe-icon">▤</span>`}
         <span class="recipe-text"><strong>${escapeHTML(recipe.name)}</strong>${meta ? `<small>${escapeHTML(meta)}</small>` : ""}</span>
       </button>
-      <button class="recipe-favorite ${recipe.favorite ? "marked-gold" : ""}" type="button" data-favorite-recipe="${recipe.id}" aria-label="${recipe.favorite ? "Quitar de favoritas" : "Guardar en favoritas"}">★</button>
-      <div class="card-actions recipe-actions">
-        <button class="card-action" type="button" data-edit-recipe="${recipe.id}">Editar</button>
-        <button class="card-action danger-inline" type="button" data-delete-recipe="${recipe.id}">Eliminar</button>
-      </div>
+      <button class="recipe-delete" type="button" data-delete-recipe="${recipe.id}" aria-label="Eliminar ${escapeHTML(recipe.name)}">Eliminar</button>
     </article>`;
   }
 
@@ -228,6 +249,7 @@
     document.querySelectorAll(".space").forEach(button => button.classList.toggle("active", button.dataset.space === activeSpace));
     document.querySelectorAll(".filter").forEach(button => button.classList.toggle("active", button.dataset.category === activeCategory));
     document.body.classList.toggle("milla", activeSpace === "milla");
+    applyGridColumns();
 
     const filteredMeals = meals.filter(meal =>
       matchesSpace(meal, "meal") &&
@@ -316,7 +338,6 @@
       $("mealIngredients").value = meal.ingredients || "";
       $("mealCategory").value = meal.category;
       $("mealForMilla").checked = Boolean(meal.forMilla);
-      $("mealFavorite").checked = Boolean(meal.favorite);
       $("photoPreview").innerHTML = meal.photo ? `<img src="${meal.photo}" alt="Foto actual">` : "";
     }
     $("mealDialog").showModal();
@@ -335,7 +356,6 @@
       $("recipeTime").value = recipe.time_minutes ?? "";
       $("recipeServings").value = recipe.servings ?? "";
       $("recipeCategory").value = recipe.category || "";
-      $("recipeFavorite").checked = Boolean(recipe.favorite);
       $("recipePhotoPreview").innerHTML = recipe.photo ? `<img src="${recipe.photo}" alt="Foto actual">` : "";
     }
     $("recipeDialog").showModal();
@@ -363,15 +383,6 @@
       $("detailContent").innerHTML = `${photo}${meta.length ? `<div class="recipe-meta">${meta.map(item => `<span>${escapeHTML(item)}</span>`).join("")}</div>` : ""}${detailSection("Ingredientes", record.ingredients)}${detailSection("Preparación", record.steps)}`;
     }
     $("detailDialog").showModal();
-  }
-
-  async function toggleFavorite(table, id) {
-    const records = await all(table);
-    const record = records.find(item => item.id === id);
-    if (!record) return;
-    const { error } = await sb.from(table).update({ favorite: !record.favorite }).eq("id", id);
-    if (error) throw error;
-    await render();
   }
 
   function openLightbox(src, title = "") {
@@ -452,6 +463,8 @@
   document.querySelectorAll(".space").forEach(button => button.onclick = () => { activeSpace = button.dataset.space; render().catch(showError); });
   document.querySelectorAll(".tab").forEach(button => button.onclick = () => { activeView = button.dataset.view; render().catch(showError); });
   document.querySelectorAll(".filter").forEach(button => button.onclick = () => { activeCategory = button.dataset.category; render().catch(showError); });
+  document.querySelectorAll("[data-grid-columns]").forEach(button => button.onclick = () => setGridColumns(button.dataset.gridColumns));
+  applyGridColumns();
 
   bindPhotoOpen($("mealGrid"));
   bindPhotoOpen($("detailContent"));
@@ -467,11 +480,9 @@
         notify("Comida eliminada");
         return await render();
       }
-      const favorite = event.target.closest("[data-favorite-meal]");
-      if (favorite) return await toggleFavorite("meals", favorite.dataset.favoriteMeal);
-      const heart = event.target.closest("[data-heart]");
-      if (heart) {
-        const meal = (await all("meals")).find(item => item.id === heart.dataset.heart);
+      const milla = event.target.closest("[data-milla-meal]");
+      if (milla) {
+        const meal = (await all("meals")).find(item => item.id === milla.dataset.millaMeal);
         if (meal) {
           const { error } = await sb.from("meals").update({ for_milla: !meal.forMilla }).eq("id", meal.id);
           if (error) throw error;
@@ -497,8 +508,6 @@
         notify("Receta eliminada");
         return await render();
       }
-      const favorite = event.target.closest("[data-favorite-recipe]");
-      if (favorite) return await toggleFavorite("recipes", favorite.dataset.favoriteRecipe);
       const detail = event.target.closest("[data-detail-recipe]");
       if (detail) await showDetail("recipe", detail.dataset.detailRecipe);
     } catch (error) {
@@ -531,7 +540,7 @@
         ingredients: $("mealIngredients").value.trim(),
         category: $("mealCategory").value,
         forMilla: $("mealForMilla").checked,
-        favorite: $("mealFavorite").checked,
+        favorite: Boolean(old?.favorite),
         photo_path: old?.photo_path || null,
         isEditing: Boolean(id),
       };
@@ -580,7 +589,7 @@
         timeMinutes: $("recipeTime").value ? Number($("recipeTime").value) : null,
         servings: $("recipeServings").value ? Number($("recipeServings").value) : null,
         category: $("recipeCategory").value || null,
-        favorite: $("recipeFavorite").checked,
+        favorite: Boolean(old?.favorite),
         photo_path: old?.photo_path || null,
         photoData: selectedRecipePhoto?.data || null,
         isEditing: Boolean(id),

@@ -37,8 +37,7 @@
 
     <div class="spaces" role="group" aria-label="Colección">
       <button class="space active" data-space="mine">Mis comidas</button>
-      <button class="space pink" data-space="milla">Millá ♡</button>
-      <button class="space gold" data-space="favorites">Favoritas</button>
+      <button class="space pink" data-space="milla">Millá ♕</button>
     </div>
 
     <label class="search">
@@ -53,6 +52,13 @@
     </nav>
 
     <section id="mealView">
+      <div class="gallery-toolbar" aria-label="Vista de galería">
+        <span class="gallery-toolbar-label">Vista</span>
+        <div class="view-switch" role="group" aria-label="Cantidad de columnas">
+          <button class="view-option" type="button" data-grid-columns="1" aria-label="Mostrar una columna" aria-pressed="false">▤</button>
+          <button class="view-option" type="button" data-grid-columns="2" aria-label="Mostrar dos columnas" aria-pressed="true">▦</button>
+        </div>
+      </div>
       <div class="filters" id="filters">
         <button class="filter active" data-category="Todas">Todas</button>
         <button class="filter" data-category="Desayuno / Merienda">Desayuno / Merienda</button>
@@ -94,7 +100,6 @@
         </select>
       </label>
       <label class="check-row"><input id="mealForMilla" type="checkbox"><span>También para Millá ♡</span></label>
-      <label class="check-row favorite-check"><input id="mealFavorite" type="checkbox"><span>Guardar en Favoritas</span></label>
       <p id="mealFormStatus" class="form-status" hidden></p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="mealDialog">Cancelar</button><button class="add-button" id="mealSaveButton" type="submit">Guardar</button></div>
     </form>
@@ -124,7 +129,6 @@
           <option>Snacks / Postres</option>
         </select>
       </label>
-      <label class="check-row favorite-check"><input id="recipeFavorite" type="checkbox"><span>Guardar en Favoritas</span></label>
       <p id="recipeFormStatus" class="form-status" hidden></p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="recipeDialog">Cancelar</button><button class="add-button" id="recipeSaveButton" type="submit">Guardar</button></div>
     </form>
