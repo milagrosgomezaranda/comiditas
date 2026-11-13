@@ -27,6 +27,7 @@
   const selectedMealIds = new Set();
   let mealPressTimer = null;
   let suppressMealClick = false;
+  let pendingDeleteMealIds = [];
 
   const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const escapeHTML = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -234,6 +235,11 @@
         <span class="selection-check" aria-hidden="true">✓</span>
       </div>
       <div class="meal-title">${escapeHTML(meal.name)}</div>
+      <div class="meal-actions" role="group" aria-label="Acciones para ${escapeHTML(meal.name)}">
+        <button class="meal-action milla-action ${meal.forMilla ? "active" : ""}" type="button" data-milla-meal="${meal.id}" aria-label="${meal.forMilla ? "Quitar de Millá" : "Marcar también para Millá"}" aria-pressed="${meal.forMilla ? "true" : "false"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></button>
+        <button class="meal-action edit-action" type="button" data-edit-meal="${meal.id}" aria-label="Editar ${escapeHTML(meal.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.6-10.6-4-4L4 16v4Zm12.1-16.1 4 4 1.2-1.2a1.4 1.4 0 0 0 0-2l-2-2a1.4 1.4 0 0 0-2 0l-1.2 1.2Z"/></svg></button>
+        <button class="meal-action delete-action" type="button" data-delete-meal="${meal.id}" aria-label="Eliminar ${escapeHTML(meal.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8l1 2h4v2H3V6h4l1-2Zm-2 6h12l-1 10H7L6 10Zm4 2v6h2v-6h-2Zm4 0v6h2v-6h-2Z"/></svg></button>
+      </div>
     </article>`;
   }
 
@@ -569,7 +575,16 @@
 
   function exitMealSelection() { mealSelectionMode = false; selectedMealIds.clear(); updateMealSelectionUI(); render().catch(showError); }
 
+  function openDeleteMealsDialog(ids) {
+    pendingDeleteMealIds = [...new Set(ids.filter(Boolean))];
+    const count = pendingDeleteMealIds.length; if (!count) return;
+    $("deleteSelectionTitle").textContent = count === 1 ? "¿Eliminar esta comida?" : `¿Eliminar ${count} comidas?`;
+    $("deleteSelectionText").textContent = count === 1 ? "Se eliminará la comida y sus fotografías. Esta acción no se puede deshacer." : `Se eliminarán las ${count} comidas seleccionadas y sus fotografías. Esta acción no se puede deshacer.`;
+    $("deleteSelectionDialog").showModal();
+  }
+
   $("mealGrid").addEventListener("pointerdown", event => {
+    if (event.target.closest(".meal-action")) return;
     const card = event.target.closest("[data-meal-card]"); if (!card || mealSelectionMode) return;
     clearTimeout(mealPressTimer); mealPressTimer = setTimeout(() => { suppressMealClick = true; mealSelectionMode = true; selectedMealIds.add(card.dataset.mealCard); updateMealSelectionUI(); render().catch(showError); if (navigator.vibrate) navigator.vibrate(20); }, 500);
   });
@@ -577,6 +592,14 @@
 
   $("mealGrid").addEventListener("click", async event => {
     try {
+      const action = event.target.closest(".meal-action");
+      if (action) {
+        event.stopPropagation();
+        const edit = action.closest("[data-edit-meal]"); if (edit) return await openMealEditor(edit.dataset.editMeal);
+        const remove = action.closest("[data-delete-meal]"); if (remove) return openDeleteMealsDialog([remove.dataset.deleteMeal]);
+        const milla = action.closest("[data-milla-meal]");
+        if (milla) { const meal = (await all("meals")).find(item => item.id === milla.dataset.millaMeal); if (meal) { const { error } = await sb.from("meals").update({ for_milla: !meal.forMilla }).eq("id", meal.id); if (error) throw error; await render(); } return; }
+      }
       const card = event.target.closest("[data-meal-card]"); if (!card) return;
       if (suppressMealClick) { suppressMealClick = false; return; }
       const id = card.dataset.mealCard;
@@ -588,9 +611,9 @@
   $("selectionCancel").onclick = exitMealSelection;
   $("selectionEdit").onclick = async () => { const id = [...selectedMealIds][0]; if (!id || selectedMealIds.size !== 1) return; mealSelectionMode = false; selectedMealIds.clear(); updateMealSelectionUI(); await openMealEditor(id); };
   $("selectionMilla").onclick = async () => { try { const meals = await all("meals"); const chosen = meals.filter(meal => selectedMealIds.has(meal.id)); const mark = !chosen.every(meal => meal.forMilla); for (const meal of chosen) { const { error } = await sb.from("meals").update({ for_milla: mark }).eq("id", meal.id); if (error) throw error; } notify(mark ? "Marcadas para Millá" : "Quitadas de Millá"); exitMealSelection(); } catch (error) { showError(error); } };
-  $("selectionDelete").onclick = () => { const count = selectedMealIds.size; if (!count) return; $("deleteSelectionTitle").textContent = count === 1 ? "¿Eliminar esta comida?" : `¿Eliminar ${count} comidas?`; $("deleteSelectionText").textContent = count === 1 ? "Se eliminará la comida y sus fotografías. Esta acción no se puede deshacer." : `Se eliminarán las ${count} comidas seleccionadas y sus fotografías. Esta acción no se puede deshacer.`; $("deleteSelectionDialog").showModal(); };
-  $("cancelSelectionDelete").onclick = () => $("deleteSelectionDialog").close();
-  $("confirmSelectionDelete").onclick = async () => { const button = $("confirmSelectionDelete"); button.disabled = true; try { const ids = [...selectedMealIds]; for (const id of ids) await deleteItem("meals", id); $("deleteSelectionDialog").close(); notify(ids.length === 1 ? "Comida eliminada" : `${ids.length} comidas eliminadas`); exitMealSelection(); } catch (error) { showError(error); } finally { button.disabled = false; } };
+  $("selectionDelete").onclick = () => openDeleteMealsDialog([...selectedMealIds]);
+  $("cancelSelectionDelete").onclick = () => { pendingDeleteMealIds = []; $("deleteSelectionDialog").close(); };
+  $("confirmSelectionDelete").onclick = async () => { const button = $("confirmSelectionDelete"); button.disabled = true; try { const ids = [...pendingDeleteMealIds]; for (const id of ids) await deleteItem("meals", id); pendingDeleteMealIds = []; $("deleteSelectionDialog").close(); notify(ids.length === 1 ? "Comida eliminada" : `${ids.length} comidas eliminadas`); if (mealSelectionMode) exitMealSelection(); else await render(); } catch (error) { showError(error); } finally { button.disabled = false; } };
 
   $("bulkContent").addEventListener("click", event => {
     const remove = event.target.closest("[data-remove-bulk]"); if (remove) { const id = remove.dataset.removeBulk; bulkPhotos = bulkPhotos.filter(photo => photo.id !== id); bulkGroups.forEach(group => group.photoIds = group.photoIds.filter(photoId => photoId !== id)); if (!bulkPhotos.length) { $("bulkMealDialog").close(); return; } renderBulkReview(); return; }
