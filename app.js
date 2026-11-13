@@ -230,9 +230,9 @@
       </div>
       <button class="meal-title" type="button" data-detail-meal="${meal.id}">${escapeHTML(meal.name)}</button>
       <div class="meal-actions" role="group" aria-label="Acciones para ${escapeHTML(meal.name)}">
-        <button class="meal-action milla-action ${meal.forMilla ? "active" : ""}" type="button" data-milla-meal="${meal.id}" aria-label="${meal.forMilla ? "Quitar de Millá" : "Marcar también para Millá"}" aria-pressed="${meal.forMilla ? "true" : "false"}">♕</button>
-        <button class="meal-action edit-action" type="button" data-edit-meal="${meal.id}" aria-label="Editar ${escapeHTML(meal.name)}">✎</button>
-        <button class="meal-action delete-action" type="button" data-delete-meal="${meal.id}" aria-label="Eliminar ${escapeHTML(meal.name)}">⌫</button>
+        <button class="meal-action milla-action ${meal.forMilla ? "active" : ""}" type="button" data-milla-meal="${meal.id}" aria-label="${meal.forMilla ? "Quitar de Millá" : "Marcar también para Millá"}" aria-pressed="${meal.forMilla ? "true" : "false"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.2s-7.2-4.4-9.3-8.5C1.1 8.6 2.8 5 6.3 5c2 0 3.2 1.1 3.9 2.1C10.9 6.1 12.1 5 14.1 5c3.5 0 5.2 3.6 3.6 6.7-2.1 4.1-5.7 8.5-5.7 8.5Z"/></svg></button>
+        <button class="meal-action edit-action" type="button" data-edit-meal="${meal.id}" aria-label="Editar ${escapeHTML(meal.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.6-10.6-4-4L4 16v4Zm12.1-16.1 4 4 1.2-1.2a1.4 1.4 0 0 0 0-2l-2-2a1.4 1.4 0 0 0-2 0l-1.2 1.2Z"/></svg></button>
+        <button class="meal-action delete-action" type="button" data-delete-meal="${meal.id}" aria-label="Eliminar ${escapeHTML(meal.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8l1 2h4v2H3V6h4l1-2Zm-2 6h12l-1 10H7L6 10Zm4 2v6h2v-6h-2Zm4 0v6h2v-6h-2Z"/></svg></button>
       </div>
     </article>`;
   }
