@@ -53,13 +53,12 @@
 
     <section id="mealView">
       <div class="gallery-toolbar" aria-label="Vista de galería">
-        <button id="selectMealsButton" class="select-meals-button" type="button">Seleccionar</button><span class="gallery-toolbar-label">Vista</span>
+        <span class="gallery-toolbar-label">Vista</span>
         <div class="view-switch" role="group" aria-label="Cantidad de columnas">
           <button class="view-option" type="button" data-grid-columns="1" aria-label="Mostrar una columna" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>
           <button class="view-option" type="button" data-grid-columns="2" aria-label="Mostrar dos columnas" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="2"/><rect x="13" y="5" width="8" height="14" rx="2"/></svg></button>
         </div>
       </div>
-      <div id="mealSelectionBar" class="meal-selection-bar" hidden><strong id="mealSelectionCount">0 seleccionadas</strong><button id="deleteSelectedMeals" type="button" disabled>Eliminar seleccionadas</button></div>
       <div class="filters" id="filters">
         <button class="filter active" data-category="Todas">Todas</button>
         <button class="filter" data-category="Desayuno / Merienda">Desayuno / Merienda</button>
@@ -161,6 +160,23 @@
     </form>
   </dialog>
 
+
+  <div id="mealSelectionBar" class="selection-bar" hidden aria-live="polite">
+    <button id="selectionCancel" type="button" class="selection-cancel">Cancelar</button>
+    <strong id="selectionCount">1 seleccionada</strong>
+    <div class="selection-actions">
+      <button id="selectionMilla" type="button" class="selection-action"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg><span>Millá</span></button>
+      <button id="selectionEdit" type="button" class="selection-action"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg><span>Editar</span></button>
+      <button id="selectionDelete" type="button" class="selection-action danger"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6M14 10v6"/></svg><span>Eliminar</span></button>
+    </div>
+  </div>
+
+  <dialog id="deleteSelectionDialog" class="modal confirm-modal">
+    <div class="confirm-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6M14 10v6"/></svg></div>
+    <h2 id="deleteSelectionTitle">¿Eliminar esta comida?</h2>
+    <p id="deleteSelectionText" class="hint">Esta acción no se puede deshacer.</p>
+    <div class="modal-actions"><button id="cancelSelectionDelete" type="button" class="secondary-button">Cancelar</button><button id="confirmSelectionDelete" type="button" class="danger-button">Eliminar</button></div>
+  </dialog>
   <div id="photoLightbox" class="lightbox" hidden aria-modal="true" role="dialog" aria-label="Foto ampliada">
     <button id="lightboxClose" class="lightbox-close" type="button" aria-label="Cerrar foto">×</button>
     <img id="lightboxImage" alt="Foto ampliada">
