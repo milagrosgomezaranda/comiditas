@@ -31,7 +31,7 @@
       <div><p class="eyebrow">Nuestra colección</p><h1>Comiditas</h1></div>
       <div class="header-actions">
         <button class="icon-button" id="signOutButton" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button>
-        <button class="icon-button primary" id="quickAdd" aria-label="Agregar comida">＋</button>
+        <button class="icon-button primary" id="quickAdd" aria-label="Agregar comidas">＋</button>
       </div>
     </header>
 
@@ -75,10 +75,20 @@
     </section>
 
     <footer class="bottom-actions" aria-label="Acciones rápidas">
-      <button id="addMealFooter" class="add-button">＋ Agregar comida</button>
+      <button id="addMealFooter" class="add-button">＋ Agregar comidas</button>
       <button id="addRecipeFooter" class="secondary-button">＋ Receta</button>
     </footer>
   </main>
+
+
+  <input id="bulkGalleryInput" class="visually-hidden-file" type="file" accept="image/*" multiple>
+
+  <dialog id="bulkMealDialog" class="modal bulk-modal">
+    <div class="modal-head"><div><p class="wizard-kicker" id="bulkStepLabel">Paso 1 de 4</p><h2 id="bulkDialogTitle">Fotos seleccionadas</h2></div><button type="button" class="icon-button close-large" id="bulkClose" aria-label="Cerrar">×</button></div>
+    <div id="bulkContent"></div>
+    <p id="bulkStatus" class="form-status" hidden></p>
+    <div class="modal-actions"><button id="bulkBack" type="button" class="secondary-button" hidden>Volver</button><button id="bulkNext" type="button" class="add-button">Continuar</button></div>
+  </dialog>
 
   <dialog id="mealDialog" class="modal">
     <form id="mealForm">
