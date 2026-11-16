@@ -583,12 +583,18 @@
     $("deleteSelectionDialog").showModal();
   }
 
+  let mealPressStartX = 0;
+  let mealPressStartY = 0;
+  const cancelMealPress = () => clearTimeout(mealPressTimer);
   $("mealGrid").addEventListener("pointerdown", event => {
     if (event.target.closest(".meal-action")) return;
     const card = event.target.closest("[data-meal-card]"); if (!card || mealSelectionMode) return;
-    clearTimeout(mealPressTimer); mealPressTimer = setTimeout(() => { suppressMealClick = true; mealSelectionMode = true; selectedMealIds.add(card.dataset.mealCard); updateMealSelectionUI(); render().catch(showError); if (navigator.vibrate) navigator.vibrate(20); }, 500);
+    mealPressStartX = event.clientX; mealPressStartY = event.clientY;
+    cancelMealPress();
+    mealPressTimer = setTimeout(() => { suppressMealClick = true; mealSelectionMode = true; selectedMealIds.add(card.dataset.mealCard); updateMealSelectionUI(); render().catch(showError); if (navigator.vibrate) navigator.vibrate(20); }, 500);
   });
-  ["pointerup","pointercancel","pointerleave"].forEach(type => $("mealGrid").addEventListener(type, () => clearTimeout(mealPressTimer)));
+  $("mealGrid").addEventListener("pointermove", event => { if (Math.abs(event.clientX - mealPressStartX) > 10 || Math.abs(event.clientY - mealPressStartY) > 10) cancelMealPress(); });
+  ["pointerup","pointercancel","pointerleave"].forEach(type => $("mealGrid").addEventListener(type, cancelMealPress));
 
   $("mealGrid").addEventListener("click", async event => {
     try {

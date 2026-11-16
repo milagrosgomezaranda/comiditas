@@ -1,4 +1,4 @@
-const CACHE = "comiditas-v14-individual-bulk-actions";
+const CACHE = "comiditas-v15-ux-ergonomic-final";
 const STATIC_ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./config.js"];
 
 self.addEventListener("install", event => {
