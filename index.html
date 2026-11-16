@@ -28,7 +28,7 @@
 
   <main class="app" id="mainApp" hidden>
     <header class="topbar">
-      <div><p class="eyebrow">Nuestra colección</p><h1>Comiditas</h1></div>
+      <div><h1>Comiditas</h1></div>
       <div class="header-actions">
         <button class="icon-button" id="signOutButton" aria-label="Cerrar sesión" title="Cerrar sesión">↪</button>
         <button class="icon-button primary" id="quickAdd" aria-label="Agregar comidas">＋</button>
@@ -37,12 +37,12 @@
 
     <div class="spaces" role="group" aria-label="Colección">
       <button class="space active" data-space="mine">Mis comidas</button>
-      <button class="space pink" data-space="milla">Millá ♕</button>
+      <button class="space pink" data-space="milla">Millá</button>
     </div>
 
     <label class="search">
       <span aria-hidden="true">⌕</span>
-      <input id="searchInput" type="search" placeholder="Buscar comida o ingrediente…" autocomplete="off">
+      <input id="searchInput" type="search" placeholder="Buscar comida…" autocomplete="off">
       <button id="clearSearch" class="clear-search" type="button" aria-label="Borrar búsqueda" hidden>×</button>
     </label>
 
@@ -53,7 +53,7 @@
 
     <section id="mealView">
       <div class="gallery-toolbar" aria-label="Vista de galería">
-        <span class="gallery-toolbar-label">Vista</span>
+        
         <div class="view-switch" role="group" aria-label="Cantidad de columnas">
           <button class="view-option" type="button" data-grid-columns="1" aria-label="Mostrar una columna" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>
           <button class="view-option" type="button" data-grid-columns="2" aria-label="Mostrar dos columnas" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="2"/><rect x="13" y="5" width="8" height="14" rx="2"/></svg></button>
@@ -84,7 +84,7 @@
   <input id="bulkGalleryInput" class="visually-hidden-file" type="file" accept="image/*" multiple>
 
   <dialog id="bulkMealDialog" class="modal bulk-modal">
-    <div class="modal-head"><div><p class="wizard-kicker" id="bulkStepLabel">Comidas nuevas</p><h2 id="bulkDialogTitle">Poneles un título</h2></div><button type="button" class="icon-button close-large" id="bulkClose" aria-label="Cerrar">×</button></div>
+    <div class="modal-head"><div><p class="wizard-kicker" id="bulkStepLabel">Comidas nuevas</p><h2 id="bulkDialogTitle">Título y categoría</h2></div><button type="button" class="icon-button close-large" id="bulkClose" aria-label="Cerrar">×</button></div>
     <div id="bulkContent"></div>
     <p id="bulkStatus" class="form-status" hidden></p>
     <div class="modal-actions"><button id="bulkBack" type="button" class="secondary-button" hidden>Volver</button><button id="bulkNext" type="button" class="add-button">Guardar</button></div>
@@ -98,7 +98,7 @@
         <label class="photo-button">▧ Elegir foto<input id="galleryInput" type="file" accept="image/*"></label>
         <label class="photo-button">◎ Sacar foto<input id="cameraInput" type="file" accept="image/*" capture="environment"></label>
       </div>
-      <p class="hint">La foto y el título alcanzan. Ingredientes y categoría son opcionales para ordenar y buscar.</p>
+      
       <div id="photoPreview" class="photo-preview"></div>
       <label class="field">Nombre<input id="mealName" required maxlength="120" placeholder="Ej. Tarta de pollo"></label>
       <label class="field">Ingredientes para buscar <span class="optional">opcional</span><textarea id="mealIngredients" rows="2" placeholder="Pollo, cebolla, huevo…"></textarea></label>
