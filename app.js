@@ -329,13 +329,19 @@
     const height = 900;
     const sourceRatio = image.naturalWidth / image.naturalHeight;
     const targetRatio = width / height;
+    const isTallScreenshot = sourceRatio < 0.72;
     let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight;
     if (sourceRatio > targetRatio) {
       sw = image.naturalHeight * targetRatio;
       sx = (image.naturalWidth - sw) / 2;
     } else {
       sh = image.naturalWidth / targetRatio;
-      sy = (image.naturalHeight - sh) / 2;
+      if (isTallScreenshot) {
+        const focusY = image.naturalHeight * 0.58;
+        sy = Math.max(0, Math.min(image.naturalHeight - sh, focusY - sh / 2));
+      } else {
+        sy = (image.naturalHeight - sh) / 2;
+      }
     }
     const canvas = document.createElement("canvas");
     canvas.width = width;
