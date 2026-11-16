@@ -230,8 +230,7 @@
     const selected = selectedMealIds.has(meal.id);
     return `<article class="meal-card ${selected ? "selected" : ""}" data-meal-card="${meal.id}">
       <div class="photo-shell">
-        ${meal.photo ? `<img class="meal-photo" src="${escapeHTML(meal.photo)}" alt="${escapeHTML(meal.name)}">` : `<div class="meal-photo photo-placeholder">Sin foto</div>`}
-        ${meal.forMilla ? `<span class="milla-indicator" aria-label="Millá"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></span>` : ""}
+        ${meal.photo ? `<button type="button" class="photo-open" data-photo-src="${escapeHTML(meal.photo)}" data-photo-title="${escapeHTML(meal.name)}" aria-label="Ver foto de ${escapeHTML(meal.name)}"><img class="meal-photo" src="${escapeHTML(meal.photo)}" alt="${escapeHTML(meal.name)}"></button>` : `<div class="meal-photo photo-placeholder">Sin foto</div>`}
         <span class="selection-check" aria-hidden="true">✓</span>
       </div>
       <div class="meal-title">${escapeHTML(meal.name)}</div>
@@ -351,73 +350,56 @@
 
   async function handleBulkFiles(input) {
     try {
-      const fresh = await filesToPhotos([...input.files]);
-      if (!fresh.length) return;
-      const additions = fresh.map(photo => ({ ...photo, id: uid(), cropX: 50, cropY: 50 }));
-      if ($("bulkMealDialog").open && bulkPhotos.length) { bulkPhotos.push(...additions); if (!bulkGroups.length) bulkGroups = [{ id: uid(), photoIds: [], name: "", category: "Almuerzo / Cena", forMilla: false, coverId: null }]; bulkGroups[0].photoIds.push(...additions.map(photo => photo.id)); if (!bulkGroups[0].coverId) bulkGroups[0].coverId = additions[0].id; bulkStep = 1; renderBulkStep(); }
-      else { bulkPhotos = additions; bulkGroups = [{ id: uid(), photoIds: bulkPhotos.map(photo => photo.id), name: "", category: "Almuerzo / Cena", forMilla: false, coverId: bulkPhotos[0].id }]; bulkStep = 1; renderBulkStep(); $("bulkMealDialog").showModal(); }
+      const fresh = await filesToPhotos([...input.files]); input.value = ""; if (!fresh.length) return;
+      bulkPhotos = fresh.map(photo => ({ ...photo, id: uid() }));
+      bulkGroups = bulkPhotos.map(photo => ({ id: uid(), photoIds: [photo.id], name: "", category: "Almuerzo / Cena", forMilla: false, coverId: photo.id }));
+      renderQuickMeals(); $("bulkMealDialog").showModal();
     } catch (error) { showError(error); }
-    input.value = "";
   }
 
   function bulkPhoto(id) { return bulkPhotos.find(photo => photo.id === id); }
-  function assignedPhotoIds() { return new Set(bulkGroups.flatMap(group => group.photoIds)); }
-  function normalizeBulkGroups() { bulkGroups.forEach((group, index) => { if (!group.coverId || !group.photoIds.includes(group.coverId)) group.coverId = group.photoIds[0] || null; if (!group.name) group.name = `Comida ${index + 1}`; }); }
 
-  function renderBulkStep() {
-    const titles = { 1: "Fotos seleccionadas", 2: "¿Cómo querés organizarlas?", 3: "Agrupar en comidas", 4: "Completar las comidas" };
-    $("bulkStepLabel").textContent = `Paso ${bulkStep} de 4`; $("bulkDialogTitle").textContent = titles[bulkStep]; $("bulkBack").hidden = bulkStep === 1; $("bulkNext").textContent = bulkStep === 4 ? "Guardar comidas" : "Continuar"; setFormStatus("bulkStatus");
-    if (bulkStep === 1) renderBulkReview();
-    if (bulkStep === 2) renderBulkChoice();
-    if (bulkStep === 3) renderBulkGrouping();
-    if (bulkStep === 4) renderBulkData();
+  function renderQuickMeals() {
+    $("bulkStepLabel").textContent = `${bulkPhotos.length} ${bulkPhotos.length === 1 ? "comida" : "comidas"}`;
+    $("bulkDialogTitle").textContent = "Poneles un título";
+    $("bulkBack").hidden = true; $("bulkNext").textContent = bulkPhotos.length === 1 ? "Guardar comida" : `Guardar ${bulkPhotos.length} comidas`; $("bulkNext").disabled = false; setFormStatus("bulkStatus");
+    $("bulkContent").innerHTML = `<p class="bulk-copy">Una foto = una comida. Escribí el título y listo.</p><div class="quick-meal-list">${bulkGroups.map((group, index) => { const photo = bulkPhoto(group.photoIds[0]); return `<section class="quick-meal-card" data-quick-group="${group.id}"><img src="${photo.data}" alt="Comida ${index + 1}"><div class="quick-meal-fields"><label class="field">Título<input data-group-name="${group.id}" maxlength="120" required placeholder="Ej. Carne salteada" value="${escapeHTML(group.name)}"></label><label class="quick-milla"><input data-group-milla="${group.id}" type="checkbox"${group.forMilla ? " checked" : ""}><span class="quick-heart" aria-hidden="true">♡</span><span>Para Millá</span></label></div><button type="button" class="quick-remove" data-remove-bulk="${photo.id}" aria-label="Quitar esta foto">×</button></section>`; }).join("")}</div>`;
   }
 
-  function renderBulkReview() {
-    $("bulkContent").innerHTML = `<p class="bulk-copy">${bulkPhotos.length} ${bulkPhotos.length === 1 ? "foto seleccionada" : "fotos seleccionadas"}.</p><div class="bulk-photo-grid">${bulkPhotos.map(photo => `<div class="bulk-photo"><img src="${photo.data}" alt="${escapeHTML(photo.name)}"><button type="button" data-remove-bulk="${photo.id}" aria-label="Quitar foto">×</button></div>`).join("")}</div><button type="button" id="bulkAddMore" class="secondary-button full-button bulk-add-more">＋ Agregar más fotos</button>`;
-    $("bulkAddMore").onclick = () => $("bulkGalleryInput").click();
-  }
-
-  function renderBulkChoice() {
-    $("bulkContent").innerHTML = `<div class="choice-grid"><button type="button" class="choice-card" data-bulk-choice="one"><strong>Todas son una misma comida</strong><span>Las ${bulkPhotos.length} fotos quedarán juntas.</span></button><button type="button" class="choice-card" data-bulk-choice="many"><strong>Son varias comidas</strong><span>Vas a decidir qué fotos corresponden a cada comida.</span></button></div>`;
-    $("bulkNext").disabled = true;
-  }
-
-  function renderBulkGrouping() {
-    normalizeBulkGroups(); const assigned = assignedPhotoIds(); const unassigned = bulkPhotos.filter(photo => !assigned.has(photo.id));
-    $("bulkNext").disabled = unassigned.length > 0;
-    $("bulkContent").innerHTML = `<p class="bulk-copy">Tocá una foto para moverla. Todas deben quedar dentro de una comida.</p>${bulkGroups.map((group, index) => `<section class="group-card"><div class="group-head"><strong>Comida ${index + 1}</strong><span>${group.photoIds.length} foto${group.photoIds.length === 1 ? "" : "s"}</span>${bulkGroups.length > 1 ? `<button type="button" data-delete-group="${group.id}">Eliminar grupo</button>` : ""}</div><div class="bulk-photo-grid compact">${group.photoIds.map(id => { const photo = bulkPhoto(id); return `<button type="button" class="bulk-photo selectable" data-move-photo="${id}" data-current-group="${group.id}"><img src="${photo.data}" alt="${escapeHTML(photo.name)}"><span>Mover</span></button>`; }).join("")}</div></section>`).join("")}<button type="button" id="addBulkGroup" class="secondary-button full-button">＋ Agregar otra comida</button>${unassigned.length ? `<p class="form-status">Quedan ${unassigned.length} fotos sin asignar.</p>` : ""}`;
-    $("addBulkGroup").onclick = () => { bulkGroups.push({ id: uid(), photoIds: [], name: "", category: "Almuerzo / Cena", forMilla: false, coverId: null }); renderBulkGrouping(); };
-  }
-
-  function renderBulkData() {
-    bulkGroups = bulkGroups.filter(group => group.photoIds.length); normalizeBulkGroups(); $("bulkNext").disabled = false;
-    $("bulkContent").innerHTML = `<div class="bulk-data-list">${bulkGroups.map((group, index) => `<section class="group-card data-card" data-data-group="${group.id}"><h3>Comida ${index + 1}</h3><label class="field">Nombre<input data-group-name="${group.id}" maxlength="120" required value="${escapeHTML(group.name.startsWith("Comida ") ? "" : group.name)}" placeholder="Ej. Tarta de pollo"></label><div class="cover-picker"><p>Elegí la portada</p><div class="bulk-photo-grid compact">${group.photoIds.map(id => { const photo = bulkPhoto(id); return `<button type="button" class="bulk-photo cover-option ${group.coverId === id ? "active" : ""}" data-cover-photo="${id}" data-cover-group="${group.id}"><img src="${photo.data}" alt=""><span>${group.coverId === id ? "Portada" : "Elegir"}</span></button>`; }).join("")}</div></div><label class="field">Categoría<select data-group-category="${group.id}"><option${group.category === "Desayuno / Merienda" ? " selected" : ""}>Desayuno / Merienda</option><option${group.category === "Almuerzo / Cena" ? " selected" : ""}>Almuerzo / Cena</option><option${group.category === "Snacks / Postres" ? " selected" : ""}>Snacks / Postres</option></select></label><label class="check-row"><input data-group-milla="${group.id}" type="checkbox"${group.forMilla ? " checked" : ""}><span>También para Millá ♡</span></label></section>`).join("")}</div>`;
-  }
-
-  function syncBulkData() {
-    bulkGroups.forEach(group => { const name = document.querySelector(`[data-group-name="${group.id}"]`); const category = document.querySelector(`[data-group-category="${group.id}"]`); const milla = document.querySelector(`[data-group-milla="${group.id}"]`); if (name) group.name = name.value.trim(); if (category) group.category = category.value; if (milla) group.forMilla = milla.checked; });
+  function syncQuickMeals() {
+    bulkGroups.forEach(group => { const name = document.querySelector(`[data-group-name="${group.id}"]`); const milla = document.querySelector(`[data-group-milla="${group.id}"]`); if (name) group.name = name.value.trim(); if (milla) group.forMilla = milla.checked; });
   }
 
   async function saveBulkMeals() {
-    syncBulkData(); const invalid = bulkGroups.find(group => !group.name.trim()); if (invalid) { setFormStatus("bulkStatus", "Escribí un nombre para cada comida."); document.querySelector(`[data-group-name="${invalid.id}"]`)?.focus(); return; }
-    if (bulkSaveInFlight) return; bulkSaveInFlight = true; $("bulkNext").disabled = true; $("bulkNext").textContent = "Guardando…"; setFormStatus("bulkStatus", "Guardando comidas y fotografías…", true);
+    syncQuickMeals(); const invalid = bulkGroups.find(group => !group.name.trim()); if (invalid) { setFormStatus("bulkStatus", "Poné un título a cada comida."); document.querySelector(`[data-group-name="${invalid.id}"]`)?.focus(); return; }
+    if (bulkSaveInFlight) return; bulkSaveInFlight = true; $("bulkNext").disabled = true; $("bulkNext").textContent = "Guardando…"; setFormStatus("bulkStatus", "Guardando…", true);
     const createdMealIds = [];
     try {
       for (const group of bulkGroups) {
-        const mealId = uid(); const uploaded = [];
-        for (let index = 0; index < group.photoIds.length; index++) { const photo = bulkPhoto(group.photoIds[index]); const path = await uploadPhoto(photo.data, `meals/${mealId}/${index}-${photo.id}`); uploaded.push({ photo, path, position: index }); }
-        const cover = uploaded.find(item => item.photo.id === group.coverId) || uploaded[0];
-        const { error: mealError } = await sb.from("meals").insert({ id: mealId, user_id: user.id, name: group.name.trim(), ingredients: "", category: group.category, for_milla: Boolean(group.forMilla), favorite: false, photo_path: cover?.path || null }); if (mealError) { if (uploaded.length) await sb.storage.from("meal-photos").remove(uploaded.map(item => item.path)); throw mealError; }
+        const mealId = uid(); const photo = bulkPhoto(group.photoIds[0]); const path = await uploadPhoto(photo.data, `meals/${mealId}/${photo.id}`);
+        const { error: mealError } = await sb.from("meals").insert({ id: mealId, user_id: user.id, name: group.name.trim(), ingredients: "", category: "Almuerzo / Cena", for_milla: Boolean(group.forMilla), favorite: false, photo_path: path }); if (mealError) { await sb.storage.from("meal-photos").remove([path]); throw mealError; }
         createdMealIds.push(mealId);
-        if (uploaded.length) { const rows = uploaded.map(item => ({ meal_id: mealId, user_id: user.id, photo_path: item.path, position: item.position, is_cover: item.photo.id === group.coverId, crop_x: item.photo.cropX ?? 50, crop_y: item.photo.cropY ?? 50 })); const { error: photoError } = await sb.from("meal_photos").insert(rows); if (photoError) throw photoError; }
+        const { error: photoError } = await sb.from("meal_photos").insert({ meal_id: mealId, user_id: user.id, photo_path: path, position: 0, is_cover: true, crop_x: 50, crop_y: 50 }); if (photoError) throw photoError;
       }
       $("bulkMealDialog").close(); resetBulkFlow(); activeView = "meals"; notify(`${createdMealIds.length} ${createdMealIds.length === 1 ? "comida guardada" : "comidas guardadas"}`); await render();
     } catch (error) {
       for (const mealId of createdMealIds) { try { const extras = await mealPhotos(mealId); if (extras.length) await sb.storage.from("meal-photos").remove(extras.map(item => item.photo_path)); await sb.from("meals").delete().eq("id", mealId).eq("user_id", user.id); } catch (rollbackError) { console.error("Rollback incompleto:", rollbackError); } }
-      setFormStatus("bulkStatus", `${readableError(error)} No se conservaron comidas incompletas; podés reintentar.`); showError(error);
-    }
-    finally { bulkSaveInFlight = false; $("bulkNext").disabled = false; $("bulkNext").textContent = bulkStep === 4 ? "Guardar comidas" : "Continuar"; }
+      setFormStatus("bulkStatus", `${readableError(error)} Podés reintentar.`); showError(error);
+    } finally { bulkSaveInFlight = false; $("bulkNext").disabled = false; $("bulkNext").textContent = bulkPhotos.length === 1 ? "Guardar comida" : `Guardar ${bulkPhotos.length} comidas`; }
+  }
+
+  async function openBatchMealEditor(ids) {
+    const meals = (await all("meals")).filter(meal => ids.includes(meal.id)); if (!meals.length) return;
+    bulkPhotos = []; bulkGroups = meals.map(meal => ({ id: meal.id, existingId: meal.id, photoIds: [], name: meal.name, category: meal.category || "Almuerzo / Cena", forMilla: Boolean(meal.forMilla), existingPhoto: meal.photo }));
+    $("bulkStepLabel").textContent = `${meals.length} seleccionadas`; $("bulkDialogTitle").textContent = "Editar comidas"; $("bulkBack").hidden = true; $("bulkNext").textContent = "Guardar cambios"; $("bulkNext").disabled = false; setFormStatus("bulkStatus");
+    $("bulkContent").innerHTML = `<div class="quick-meal-list">${bulkGroups.map(group => `<section class="quick-meal-card" data-quick-group="${group.id}">${group.existingPhoto ? `<img src="${escapeHTML(group.existingPhoto)}" alt="${escapeHTML(group.name)}">` : `<div class="quick-photo-placeholder">Sin foto</div>`}<div class="quick-meal-fields"><label class="field">Título<input data-group-name="${group.id}" maxlength="120" required value="${escapeHTML(group.name)}"></label><label class="quick-milla"><input data-group-milla="${group.id}" type="checkbox"${group.forMilla ? " checked" : ""}><span class="quick-heart">♡</span><span>Para Millá</span></label></div></section>`).join("")}</div>`;
+    $("bulkMealDialog").dataset.mode = "edit"; $("bulkMealDialog").showModal();
+  }
+
+  async function saveBatchMealEdits() {
+    syncQuickMeals(); const invalid = bulkGroups.find(group => !group.name.trim()); if (invalid) { setFormStatus("bulkStatus", "Poné un título a cada comida."); return; }
+    const button = $("bulkNext"); button.disabled = true; button.textContent = "Guardando…";
+    try { for (const group of bulkGroups) { const { error } = await sb.from("meals").update({ name: group.name.trim(), for_milla: Boolean(group.forMilla) }).eq("id", group.existingId).eq("user_id", user.id); if (error) throw error; } $("bulkMealDialog").close(); delete $("bulkMealDialog").dataset.mode; notify("Cambios guardados"); exitMealSelection(); } catch (error) { showError(error); } finally { button.disabled = false; button.textContent = "Guardar cambios"; }
   }
 
   async function openMealEditor(id = null) {
@@ -540,6 +522,7 @@
     container.addEventListener("click", event => {
       const target = event.target.closest("[data-photo-src]");
       if (!target) return;
+      if (container === $("mealGrid") && (mealSelectionMode || suppressMealClick)) return;
       event.preventDefault();
       event.stopPropagation();
       openLightbox(target.dataset.photoSrc, target.dataset.photoTitle || "");
@@ -549,7 +532,7 @@
   document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", () => $(button.dataset.close).close()));
   $("quickAdd").onclick = $("addMealFooter").onclick = openBulkPicker;
   $("bulkGalleryInput").addEventListener("change", event => handleBulkFiles(event.target));
-  $("bulkClose").onclick = () => { if (!bulkSaveInFlight) $("bulkMealDialog").close(); };
+  $("bulkClose").onclick = () => { if (!bulkSaveInFlight) { $("bulkMealDialog").close(); delete $("bulkMealDialog").dataset.mode; resetBulkFlow(); } };
   $("addRecipeFooter").onclick = () => openRecipeEditor().catch(showError);
   $("galleryInput").addEventListener("change", event => handleMealFiles(event.target));
   $("cameraInput").addEventListener("change", event => handleMealFiles(event.target));
@@ -570,7 +553,7 @@
     const count = selectedMealIds.size;
     $("mealSelectionBar").hidden = !mealSelectionMode;
     $("selectionCount").textContent = count === 1 ? "1 seleccionada" : `${count} seleccionadas`;
-    $("selectionEdit").disabled = count !== 1;
+    $("selectionEdit").disabled = count < 1;
   }
 
   function exitMealSelection() { mealSelectionMode = false; selectedMealIds.clear(); updateMealSelectionUI(); render().catch(showError); }
@@ -610,164 +593,23 @@
       if (suppressMealClick) { suppressMealClick = false; return; }
       const id = card.dataset.mealCard;
       if (mealSelectionMode) { selectedMealIds.has(id) ? selectedMealIds.delete(id) : selectedMealIds.add(id); if (!selectedMealIds.size) mealSelectionMode = false; updateMealSelectionUI(); return await render(); }
-      await showDetail("meal", id);
+      return;
     } catch (error) { showError(error); }
   });
 
   $("selectionCancel").onclick = exitMealSelection;
-  $("selectionEdit").onclick = async () => { const id = [...selectedMealIds][0]; if (!id || selectedMealIds.size !== 1) return; mealSelectionMode = false; selectedMealIds.clear(); updateMealSelectionUI(); await openMealEditor(id); };
+  $("selectionEdit").onclick = async () => { const ids = [...selectedMealIds]; if (!ids.length) return; if (ids.length === 1) { mealSelectionMode = false; selectedMealIds.clear(); updateMealSelectionUI(); return await openMealEditor(ids[0]); } await openBatchMealEditor(ids); };
   $("selectionMilla").onclick = async () => { try { const meals = await all("meals"); const chosen = meals.filter(meal => selectedMealIds.has(meal.id)); const mark = !chosen.every(meal => meal.forMilla); for (const meal of chosen) { const { error } = await sb.from("meals").update({ for_milla: mark }).eq("id", meal.id); if (error) throw error; } notify(mark ? "Marcadas para Millá" : "Quitadas de Millá"); exitMealSelection(); } catch (error) { showError(error); } };
   $("selectionDelete").onclick = () => openDeleteMealsDialog([...selectedMealIds]);
   $("cancelSelectionDelete").onclick = () => { pendingDeleteMealIds = []; $("deleteSelectionDialog").close(); };
   $("confirmSelectionDelete").onclick = async () => { const button = $("confirmSelectionDelete"); button.disabled = true; try { const ids = [...pendingDeleteMealIds]; for (const id of ids) await deleteItem("meals", id); pendingDeleteMealIds = []; $("deleteSelectionDialog").close(); notify(ids.length === 1 ? "Comida eliminada" : `${ids.length} comidas eliminadas`); if (mealSelectionMode) exitMealSelection(); else await render(); } catch (error) { showError(error); } finally { button.disabled = false; } };
 
   $("bulkContent").addEventListener("click", event => {
-    const remove = event.target.closest("[data-remove-bulk]"); if (remove) { const id = remove.dataset.removeBulk; bulkPhotos = bulkPhotos.filter(photo => photo.id !== id); bulkGroups.forEach(group => group.photoIds = group.photoIds.filter(photoId => photoId !== id)); if (!bulkPhotos.length) { $("bulkMealDialog").close(); return; } renderBulkReview(); return; }
-    const choice = event.target.closest("[data-bulk-choice]"); if (choice) { if (choice.dataset.bulkChoice === "one") { bulkGroups = [{ id: uid(), photoIds: bulkPhotos.map(photo => photo.id), name: "", category: "Almuerzo / Cena", forMilla: false, coverId: bulkPhotos[0].id }]; bulkStep = 4; renderBulkStep(); } else { bulkGroups = bulkPhotos.map((photo, index) => ({ id: uid(), photoIds: [photo.id], name: "", category: "Almuerzo / Cena", forMilla: false, coverId: photo.id })); bulkStep = 3; renderBulkStep(); } return; }
-    const del = event.target.closest("[data-delete-group]"); if (del) { const group = bulkGroups.find(item => item.id === del.dataset.deleteGroup); const target = bulkGroups.find(item => item.id !== del.dataset.deleteGroup); if (group && target) target.photoIds.push(...group.photoIds); bulkGroups = bulkGroups.filter(item => item.id !== del.dataset.deleteGroup); renderBulkGrouping(); return; }
-    const move = event.target.closest("[data-move-photo]"); if (move) { const destinations = bulkGroups.filter(group => group.id !== move.dataset.currentGroup); if (!destinations.length) return notify("Creá otra comida antes de mover la foto."); const labels = destinations.map((group, index) => `${index + 1}: Comida ${bulkGroups.indexOf(group) + 1}`).join("\n"); const chosen = Number(prompt(`Mover a:\n${labels}\n\nEscribí el número:`)); const target = destinations[chosen - 1]; if (!target) return; bulkGroups.find(group => group.id === move.dataset.currentGroup).photoIds = bulkGroups.find(group => group.id === move.dataset.currentGroup).photoIds.filter(id => id !== move.dataset.movePhoto); target.photoIds.push(move.dataset.movePhoto); normalizeBulkGroups(); renderBulkGrouping(); return; }
-    const cover = event.target.closest("[data-cover-photo]"); if (cover) { syncBulkData(); const group = bulkGroups.find(item => item.id === cover.dataset.coverGroup); if (group) group.coverId = cover.dataset.coverPhoto; renderBulkData(); return; }
+    const remove = event.target.closest("[data-remove-bulk]"); if (!remove) return;
+    syncQuickMeals(); const id = remove.dataset.removeBulk; const photo = bulkPhotos.find(item => item.id === id); bulkPhotos = bulkPhotos.filter(item => item.id !== id); if (photo) bulkGroups = bulkGroups.filter(group => !group.photoIds.includes(id)); if (!bulkPhotos.length) { $("bulkMealDialog").close(); resetBulkFlow(); return; } renderQuickMeals();
   });
-  $("bulkContent").addEventListener("input", event => { const x = event.target.closest("[data-crop-x]"); const y = event.target.closest("[data-crop-y]"); if (x) { const group = bulkGroups.find(item => item.id === x.dataset.cropX); const photo = group && bulkPhoto(group.coverId); if (photo) photo.cropX = Number(x.value); } if (y) { const group = bulkGroups.find(item => item.id === y.dataset.cropY); const photo = group && bulkPhoto(group.coverId); if (photo) photo.cropY = Number(y.value); } });
-  $("bulkBack").onclick = () => { if (bulkStep > 1) { if (bulkStep === 4) syncBulkData(); bulkStep--; renderBulkStep(); } };
-  $("bulkNext").onclick = async () => { if (bulkStep === 1) { if (!bulkPhotos.length) return; bulkStep = 2; renderBulkStep(); return; } if (bulkStep === 2) return; if (bulkStep === 3) { if (assignedPhotoIds().size !== bulkPhotos.length) return setFormStatus("bulkStatus", "Todas las fotos deben estar asignadas."); bulkStep = 4; renderBulkStep(); return; } if (bulkStep === 4) await saveBulkMeals(); };
-
-  $("recipeList").addEventListener("click", async event => {
-    try {
-      const edit = event.target.closest("[data-edit-recipe]");
-      if (edit) return await openRecipeEditor(edit.dataset.editRecipe);
-      const remove = event.target.closest("[data-delete-recipe]");
-      if (remove) {
-        if (!confirm("¿Eliminar esta receta?")) return;
-        await deleteItem("recipes", remove.dataset.deleteRecipe);
-        notify("Receta eliminada");
-        return await render();
-      }
-      const detail = event.target.closest("[data-detail-recipe]");
-      if (detail) await showDetail("recipe", detail.dataset.detailRecipe);
-    } catch (error) {
-      showError(error);
-    }
-  });
-
-  $("mealForm").addEventListener("submit", async event => {
-    event.preventDefault();
-    if (mealSaveInFlight) return;
-    const id = $("mealId").value;
-    const name = $("mealName").value.trim();
-    if (!name) {
-      setFormStatus("mealFormStatus", "Escribí un nombre para la comida.");
-      $("mealName").focus();
-      return;
-    }
-
-    const button = $("mealSaveButton");
-    mealSaveInFlight = true;
-    button.disabled = true;
-    button.textContent = "Guardando…";
-    setFormStatus("mealFormStatus", "Guardando…", true);
-
-    try {
-      const old = id ? (await all("meals")).find(meal => meal.id === id) : null;
-      const base = {
-        id: id || uid(),
-        name,
-        ingredients: $("mealIngredients").value.trim(),
-        category: $("mealCategory").value,
-        forMilla: $("mealForMilla").checked,
-        favorite: Boolean(old?.favorite),
-        photo_path: old?.photo_path || null,
-        isEditing: Boolean(id),
-      };
-      base.photoData = selectedPhotos.length ? selectedPhotos[0].data : null;
-      await saveMeal(base);
-      setFormStatus("mealFormStatus", "Comida guardada.", true);
-      closeDialogs();
-      activeView = "meals";
-      notify("Comida guardada");
-      await render();
-    } catch (error) {
-      const message = readableError(error);
-      setFormStatus("mealFormStatus", message);
-      showError(error);
-    } finally {
-      mealSaveInFlight = false;
-      button.disabled = false;
-      button.textContent = "Guardar";
-    }
-  });
-
-  $("recipeForm").addEventListener("submit", async event => {
-    event.preventDefault();
-    if (recipeSaveInFlight) return;
-    const id = $("recipeId").value;
-    const name = $("recipeName").value.trim();
-    if (!name) {
-      setFormStatus("recipeFormStatus", "Escribí un nombre para la receta.");
-      $("recipeName").focus();
-      return;
-    }
-
-    const button = $("recipeSaveButton");
-    recipeSaveInFlight = true;
-    button.disabled = true;
-    button.textContent = "Guardando…";
-    setFormStatus("recipeFormStatus", "Guardando…", true);
-
-    try {
-      const old = id ? (await all("recipes")).find(recipe => recipe.id === id) : null;
-      await saveRecipe({
-        id: id || uid(),
-        name,
-        ingredients: $("recipeIngredients").value.trim(),
-        steps: $("recipeSteps").value.trim(),
-        timeMinutes: $("recipeTime").value ? Number($("recipeTime").value) : null,
-        servings: $("recipeServings").value ? Number($("recipeServings").value) : null,
-        category: $("recipeCategory").value || null,
-        favorite: Boolean(old?.favorite),
-        photo_path: old?.photo_path || null,
-        photoData: selectedRecipePhoto?.data || null,
-        isEditing: Boolean(id),
-      });
-      setFormStatus("recipeFormStatus", "Receta guardada.", true);
-      closeDialogs();
-      activeView = "recipes";
-      notify("Receta guardada");
-      await render();
-    } catch (error) {
-      const message = readableError(error);
-      setFormStatus("recipeFormStatus", message);
-      showError(error);
-    } finally {
-      recipeSaveInFlight = false;
-      button.disabled = false;
-      button.textContent = "Guardar";
-    }
-  });
-
-  $("editDetail").onclick = async () => {
-    const type = detailType;
-    const id = detailId;
-    closeDialogs();
-    try {
-      if (type === "meal") await openMealEditor(id);
-      else await openRecipeEditor(id);
-    } catch (error) {
-      showError(error);
-    }
-  };
-
-  $("deleteDetail").onclick = async () => {
-    if (!detailId || !confirm("¿Eliminar este elemento?")) return;
-    try {
-      await deleteItem(detailType === "meal" ? "meals" : "recipes", detailId);
-      closeDialogs();
-      notify("Eliminado");
-      await render();
-    } catch (error) {
-      showError(error);
-    }
-  };
+  $("bulkBack").onclick = () => {};
+  $("bulkNext").onclick = async () => { if ($("bulkMealDialog").dataset.mode === "edit") await saveBatchMealEdits(); else await saveBulkMeals(); };
 
   $("authForm").addEventListener("submit", event => { event.preventDefault(); signInWithPasswordOnly(); });
   $("forgotPasswordButton").onclick = requestPasswordReset;
